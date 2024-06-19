@@ -22,6 +22,8 @@ import multiplayergame.composeapp.generated.resources.compose_multiplatform
 @Preview
 fun App() {
     MaterialTheme {
+
+        // This makes the button unable to be clicked
         LaunchedEffect(Unit) {
             HttpClient().use {
                 val body = it.get("https://ktor.io/").bodyAsText()
