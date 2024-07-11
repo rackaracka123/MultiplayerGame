@@ -56,7 +56,7 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
-            implementation("io.insert-koin:koin-android:3.6.0-Beta4")
+            implementation(libs.koin.android)
         }
         commonMain.dependencies {
             implementation(projects.design)
@@ -74,8 +74,7 @@ kotlin {
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.navigation.compose)
 
-            implementation(platform("io.insert-koin:koin-bom:3.6.0-Beta4"))
-            implementation("io.insert-koin:koin-core:3.6.0-Beta4")
+            implementation(libs.koin.core)
         }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js.wasm.js)
