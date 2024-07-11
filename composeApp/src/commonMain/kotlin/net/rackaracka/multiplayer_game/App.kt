@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import net.rackaracka.multiplayer_game.screens.WelcomeScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 sealed class Screen(val route: String) {
