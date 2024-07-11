@@ -1,6 +1,5 @@
 package net.rackaracka.multiplayer_game
 
-import Greeting
 import SERVER_PORT
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
