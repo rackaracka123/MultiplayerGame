@@ -47,7 +47,9 @@ kotlin {
 
         commonMain.dependencies {
             implementation(projects.domain)
+            implementation(projects.dto)
             implementation(libs.ktor.client.core)
+            implementation(libs.ktor.serialization.json)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

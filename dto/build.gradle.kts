@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.serialization)
 }
 
 kotlin {
@@ -20,7 +21,7 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
     
-    jvm()
+    jvm("desktop")
     
     sourceSets {
         commonMain.dependencies {
@@ -39,6 +40,28 @@ kotlin {
                     }
                 }
             }
+        }
+    }
+
+    sourceSets {
+        val desktopMain by getting
+
+        commonMain.dependencies {
+            implementation(projects.domain)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.serialization.json)
+        }
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js.wasm.js)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
+        desktopMain.dependencies {
+            implementation(libs.ktor.client.cio)
         }
     }
 }

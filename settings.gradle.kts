@@ -32,7 +32,7 @@ dependencyResolutionManagement {
 
 include(":composeApp")
 include(":server")
-include(":shared")
 include(":design")
 include(":domain")
 include(":data")
+include(":dto")
