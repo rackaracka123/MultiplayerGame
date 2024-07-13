@@ -43,23 +43,7 @@ kotlin {
     }
 
     sourceSets {
-        val desktopMain by getting
 
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
-        commonMain.dependencies {
-            implementation(libs.ktor.client.core)
-        }
-        wasmJsMain.dependencies {
-            implementation(libs.ktor.client.js.wasm.js)
-        }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
-        desktopMain.dependencies {
-            implementation(libs.ktor.client.cio)
-        }
     }
 }
 

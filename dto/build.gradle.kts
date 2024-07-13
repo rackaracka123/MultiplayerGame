@@ -16,13 +16,13 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    
+
     jvm("desktop")
-    
+
     sourceSets {
         commonMain.dependencies {
             // put your Multiplatform dependencies here
@@ -48,20 +48,7 @@ kotlin {
 
         commonMain.dependencies {
             implementation(projects.domain)
-            implementation(libs.ktor.client.core)
             implementation(libs.ktor.serialization.json)
-        }
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
-        wasmJsMain.dependencies {
-            implementation(libs.ktor.client.js.wasm.js)
-        }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
-        desktopMain.dependencies {
-            implementation(libs.ktor.client.cio)
         }
     }
 }
