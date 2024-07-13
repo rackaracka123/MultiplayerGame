@@ -2,9 +2,10 @@ package net.rackaracka.multiplayer_game
 
 import io.ktor.server.routing.Route
 import io.ktor.server.websocket.WebSocketServerSession
+import io.ktor.server.websocket.receiveDeserialized
 import io.ktor.server.websocket.sendSerialized
 import io.ktor.server.websocket.webSocket
-import io.ktor.websocket.DefaultWebSocketSession
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
@@ -12,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger
 fun Route.gameRoutes() {
     val connections = Collections.synchronizedSet<Connection?>(LinkedHashSet())
     val game = GameService()
-    webSocket("players") {
+    webSocket("game") {
         val thisConnection = Connection(this)
         connections += thisConnection
         val player = game.connectPlayer()
@@ -25,8 +26,15 @@ fun Route.gameRoutes() {
                     }
                 }
             }
-            for (frame in incoming) {
-                println("Incoming: ${frame.data.decodeToString()}")
+
+            while (isActive) {
+                val command: GameCommandDTO = receiveDeserialized()
+                when (val cmd = command) {
+                    is GameCommandDTO.MoveDTO -> {
+                        println("Incoming: Move command")
+                        game.move(player, cmd.x, cmd.y)
+                    }
+                }
             }
         } catch (e: Exception) {
             println("[${thisConnection.name}]: Error: ${e.message}")
@@ -40,7 +48,6 @@ fun Route.gameRoutes() {
         }
     }
 }
-
 
 class Connection(val session: WebSocketServerSession) {
     companion object {

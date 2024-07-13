@@ -15,15 +15,25 @@ class GameService {
     private val _playersFlow = MutableStateFlow<List<PlayerDTO>>(emptyList())
     val playersFlow = _playersFlow.asStateFlow()
 
-    suspend fun connectPlayer(): PlayerDTO {
+    fun connectPlayer(): PlayerDTO {
         val player = PlayerDTO((Random.nextInt() % 250) + 250, (Random.nextInt() % 250) + 250)
         players += player
-        _playersFlow.emit(players)
+        _playersFlow.value = players
         return player
     }
 
-    suspend fun disconnectPlayer(player: PlayerDTO) {
+    fun disconnectPlayer(player: PlayerDTO) {
         players -= player
-        _playersFlow.emit(players)
+        _playersFlow.value = players
+    }
+
+    fun move(player: PlayerDTO, x: Int, y: Int) {
+        val index = _playersFlow.value.indexOf(player)
+        if (index != -1) {
+            _playersFlow.value =
+                _playersFlow.value.let {
+                    it.toMutableList().apply { this[index] = PlayerDTO(x, y) }
+                }.toList()
+        }
     }
 }

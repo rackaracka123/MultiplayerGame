@@ -15,11 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import net.rackaracka.multiplayer_game.Player
 import net.rackaracka.multiplayer_game.GameRepo
+import net.rackaracka.multiplayer_game.Player
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -31,9 +32,12 @@ class WelcomeScreenViewModel : ViewModel(), KoinComponent {
 
     init {
         viewModelScope.launch {
-            gameRepo.gameSession {
+            gameRepo.session(command = {
+                delay(1000)
+                move(800, 800)
+            }, onPlayerUpdate = {
                 _playersFlow.value = it
-            }
+            })
         }
     }
 }
@@ -43,8 +47,8 @@ fun WelcomeScreen(viewModel: WelcomeScreenViewModel = viewModel { WelcomeScreenV
     val players by viewModel.playersFlow.collectAsState()
 
     players.forEach { player ->
-        val playerX by animateIntAsState(targetValue = player.x)
-        val playerY by animateIntAsState(targetValue = player.y)
+        val playerX by animateIntAsState(player.x)
+        val playerY by animateIntAsState(player.y)
         Box(
             Modifier
                 .size(100.dp)
