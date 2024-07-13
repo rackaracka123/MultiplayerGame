@@ -1,6 +1,7 @@
 package net.rackaracka.multiplayer_game
 
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -34,8 +35,7 @@ fun Application.module() {
         contentConverter = KotlinxWebsocketSerializationConverter(Json)
     }
     install(CORS) {
-        allowHost("0.0.0.0:8082")
-        allowHeader(HttpHeaders.ContentType)
+        anyHost() // TODO(Production): Fix this
     }
     routing {
         gameRoutes()
