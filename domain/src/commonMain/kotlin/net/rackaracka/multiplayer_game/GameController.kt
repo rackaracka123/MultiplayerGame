@@ -1,5 +1,5 @@
 package net.rackaracka.multiplayer_game
 
-interface GameCommand {
+interface GameController {
     fun move(x: Int, y: Int)
 }

@@ -20,23 +20,26 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.rackaracka.multiplayer_game.GameRepo
-import net.rackaracka.multiplayer_game.Player
+import net.rackaracka.multiplayer_game.GameEventListener
+import net.rackaracka.multiplayer_game.PlayerPosition
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class WelcomeScreenViewModel : ViewModel(), KoinComponent {
     private val gameRepo by inject<GameRepo>()
 
-    private val _playersFlow = MutableStateFlow<List<Player>>(emptyList())
+    private val _playersFlow = MutableStateFlow<List<PlayerPosition>>(emptyList())
     val playersFlow = _playersFlow.asStateFlow()
 
     init {
         viewModelScope.launch {
-            gameRepo.session(command = {
+            gameRepo.session(gameScope = {
                 delay(1000)
                 move(800, 800)
-            }, onPlayerUpdate = {
-                _playersFlow.value = it
+            }, gameEventListener = object : GameEventListener {
+                override fun onPositionsChanged(playerPositions: List<PlayerPosition>) {
+                    _playersFlow.value = playerPositions
+                }
             })
         }
     }

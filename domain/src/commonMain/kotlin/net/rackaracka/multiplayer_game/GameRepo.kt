@@ -1,5 +1,12 @@
 package net.rackaracka.multiplayer_game
 
 interface GameRepo {
-    suspend fun session(command: suspend GameCommand.() -> Unit, onPlayerUpdate: (List<Player>) -> Unit)
+    suspend fun session(
+        gameScope: suspend GameController.() -> Unit,
+        gameEventListener: GameEventListener
+    )
+}
+
+interface GameEventListener {
+    fun onPositionsChanged(playerPositions: List<PlayerPosition>)
 }

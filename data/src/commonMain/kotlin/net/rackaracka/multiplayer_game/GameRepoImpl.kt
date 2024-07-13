@@ -13,8 +13,8 @@ import kotlinx.serialization.json.Json
 
 class GameRepoImpl : GameRepo {
     override suspend fun session(
-        command: suspend GameCommand.() -> Unit,
-        onPlayerUpdate: (List<Player>) -> Unit
+        gameScope: suspend GameController.() -> Unit,
+        gameEventListener: GameEventListener
     ) {
         val httpClient = HttpClient() {
             install(WebSockets) {
@@ -30,7 +30,7 @@ class GameRepoImpl : GameRepo {
                 path = "/game"
             ) {
                 launch {
-                    val gameCommandDTO = object : GameCommand {
+                    val gameController = object : GameController {
                         override fun move(x: Int, y: Int) {
                             this@webSocket.launch {
                                 this@webSocket.sendSerialized(
@@ -39,12 +39,12 @@ class GameRepoImpl : GameRepo {
                             }
                         }
                     }
-                    gameCommandDTO.apply { command() }
+                    gameScope(gameController)
                 }
                 while (isActive) {
                     val data = receiveDeserialized<List<PlayerDTO>>()
                     println("Incoming: $data")
-                    onPlayerUpdate(data.mapToPlayer())
+                    gameEventListener.onPositionsChanged(data.mapToPlayer())
                 }
             }
         } catch (e: Exception) {
@@ -53,4 +53,4 @@ class GameRepoImpl : GameRepo {
     }
 }
 
-private fun List<PlayerDTO>.mapToPlayer() = map { Player(x = it.x, y = it.y) }
+private fun List<PlayerDTO>.mapToPlayer() = map { PlayerPosition(x = it.x, y = it.y) }
