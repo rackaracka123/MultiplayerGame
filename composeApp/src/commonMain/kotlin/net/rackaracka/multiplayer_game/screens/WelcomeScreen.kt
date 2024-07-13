@@ -1,6 +1,5 @@
 package net.rackaracka.multiplayer_game.screens
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,25 +15,24 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import net.rackaracka.multiplayer_game.Player
-import net.rackaracka.multiplayer_game.PlayerRepo
+import net.rackaracka.multiplayer_game.GameRepo
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class WelcomeScreenViewModel : ViewModel(), KoinComponent {
-    private val playerRepo by inject<PlayerRepo>()
+    private val gameRepo by inject<GameRepo>()
 
-    private val _playerFlow = MutableStateFlow<Player?>(null)
-    val playerFlow = _playerFlow.asStateFlow()
+    private val _playersFlow = MutableStateFlow<List<Player>>(emptyList())
+    val playersFlow = _playersFlow.asStateFlow()
 
     init {
         viewModelScope.launch {
-            playerRepo.playerSession {
-                _playerFlow.value = it
+            gameRepo.gameSession {
+                _playersFlow.value = it
             }
         }
     }
@@ -42,11 +40,11 @@ class WelcomeScreenViewModel : ViewModel(), KoinComponent {
 
 @Composable
 fun WelcomeScreen(viewModel: WelcomeScreenViewModel = viewModel { WelcomeScreenViewModel() }) {
-    val player by viewModel.playerFlow.collectAsState()
+    val players by viewModel.playersFlow.collectAsState()
 
-    val playerX by animateIntAsState(targetValue = player?.x ?: 0)
-    val playerY by animateIntAsState(targetValue = player?.y ?: 0)
-    player?.let {
+    players.forEach { player ->
+        val playerX by animateIntAsState(targetValue = player.x)
+        val playerY by animateIntAsState(targetValue = player.y)
         Box(
             Modifier
                 .size(100.dp)

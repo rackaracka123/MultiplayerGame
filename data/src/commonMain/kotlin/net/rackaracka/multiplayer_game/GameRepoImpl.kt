@@ -6,11 +6,11 @@ import io.ktor.client.plugins.websocket.receiveDeserialized
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
-import io.ktor.websocket.readBytes
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 
-class PlayerRepoImpl : PlayerRepo {
-    override suspend fun playerSession(onPlayerChanged: (Player) -> Unit) {
+class GameRepoImpl : GameRepo {
+    override suspend fun gameSession(onGameUpdate: (List<Player>) -> Unit) {
         val httpClient = HttpClient() {
             install(WebSockets) {
                 contentConverter = KotlinxWebsocketSerializationConverter(Json)
@@ -20,19 +20,20 @@ class PlayerRepoImpl : PlayerRepo {
         try {
             httpClient.webSocket(
                 method = HttpMethod.Get,
-                host = "localhost",
+                host = "192.168.0.49",
                 port = 8080,
-                path = "/player"
+                path = "/players"
             ) {
-                for (frame in incoming) {
-                    val data = receiveDeserialized<PlayerDTO>()
-                    onPlayerChanged(data.toPlayer())
+                while (isActive) {
+                    val data = receiveDeserialized<List<PlayerDTO>>()
+                    println("Incoming: $data")
+                    onGameUpdate(data.mapToPlayer())
                 }
             }
         } catch (e: Exception) {
-            println("Could not connect to server.")
+            println("Could not connect to server. $e")
         }
     }
 }
 
-private fun PlayerDTO.toPlayer(): Player = Player(x = x, y = y)
+private fun List<PlayerDTO>.mapToPlayer() = map { Player(x = it.x, y = it.y) }
