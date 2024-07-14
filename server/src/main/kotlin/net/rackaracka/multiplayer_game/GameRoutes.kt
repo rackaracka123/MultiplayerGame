@@ -32,7 +32,6 @@ fun Route.gameRoutes() {
                 val command: GameCommandDTO = receiveDeserialized()
                 when (val cmd = command) {
                     is GameCommandDTO.MoveDTO -> {
-                        println("Incoming: Move command")
                         game.move(playerId, cmd.direction)
                     }
                 }

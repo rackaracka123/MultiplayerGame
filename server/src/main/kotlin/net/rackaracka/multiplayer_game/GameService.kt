@@ -53,5 +53,24 @@ private fun DirectionDTO.toPlayerPosition(x: Int, y: Int): PlayerPositionDTO {
         DirectionDTO.Down -> return PlayerPositionDTO(x, y + directionalMovement)
         DirectionDTO.Left -> return PlayerPositionDTO(x - directionalMovement, y)
         DirectionDTO.Right -> return PlayerPositionDTO(x + directionalMovement, y)
+        DirectionDTO.UpLeft -> return PlayerPositionDTO(
+            x - directionalMovement,
+            y - directionalMovement
+        )
+
+        DirectionDTO.UpRight -> return PlayerPositionDTO(
+            x + directionalMovement,
+            y - directionalMovement
+        )
+
+        DirectionDTO.DownLeft -> return PlayerPositionDTO(
+            x - directionalMovement,
+            y + directionalMovement
+        )
+
+        DirectionDTO.DownRight -> return PlayerPositionDTO(
+            x + directionalMovement,
+            y + directionalMovement
+        )
     }
 }

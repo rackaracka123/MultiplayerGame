@@ -36,7 +36,6 @@ class GameRepoImpl : GameRepo {
                 }
                 while (isActive) {
                     val data = receiveDeserialized<List<PlayerPositionDTO>>()
-                    println("Incoming: $data")
                     gameEventListener.onPositionsChanged(data.mapToPlayer())
                 }
             }

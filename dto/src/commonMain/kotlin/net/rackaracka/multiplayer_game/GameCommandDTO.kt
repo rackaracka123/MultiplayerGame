@@ -5,10 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class DirectionDTO {
-    Up,
-    Down,
-    Left,
-    Right
+    Up, Down, Left, Right, UpLeft, UpRight, DownLeft, DownRight
 }
 
 @Serializable
@@ -23,4 +20,8 @@ fun Direction.toMoveCommand(): GameCommandDTO = when (this) {
     Direction.Down -> GameCommandDTO.MoveDTO(DirectionDTO.Down)
     Direction.Left -> GameCommandDTO.MoveDTO(DirectionDTO.Left)
     Direction.Right -> GameCommandDTO.MoveDTO(DirectionDTO.Right)
+    Direction.UpLeft -> GameCommandDTO.MoveDTO(DirectionDTO.UpLeft)
+    Direction.UpRight -> GameCommandDTO.MoveDTO(DirectionDTO.UpRight)
+    Direction.DownLeft -> GameCommandDTO.MoveDTO(DirectionDTO.DownLeft)
+    Direction.DownRight -> GameCommandDTO.MoveDTO(DirectionDTO.DownRight)
 }

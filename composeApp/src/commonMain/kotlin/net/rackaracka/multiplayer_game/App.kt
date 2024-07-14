@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import net.rackaracka.multiplayer_game.screens.WelcomeScreen
+import net.rackaracka.multiplayer_game.screens.GameScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 sealed class Screen(val route: String) {
@@ -19,7 +19,7 @@ fun App() {
         val controller = rememberNavController()
         NavHost(controller, startDestination = Screen.Welcome.route) {
             composable(Screen.Welcome.route) {
-                WelcomeScreen()
+                GameScreen()
             }
         }
     }
