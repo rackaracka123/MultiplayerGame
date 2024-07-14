@@ -1,6 +1,7 @@
 package net.rackaracka.multiplayer_game
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.receiveDeserialized
 import io.ktor.client.plugins.websocket.sendSerialized
@@ -30,19 +31,11 @@ class GameRepoImpl : GameRepo {
                 path = "/game"
             ) {
                 launch {
-                    val gameController = object : GameController {
-                        override fun move(x: Int, y: Int) {
-                            this@webSocket.launch {
-                                this@webSocket.sendSerialized(
-                                    GameCommandDTO.MoveDTO(x, y) as GameCommandDTO
-                                )
-                            }
-                        }
-                    }
+                    val gameController = GameControllerImpl(this@webSocket)
                     gameScope(gameController)
                 }
                 while (isActive) {
-                    val data = receiveDeserialized<List<PlayerDTO>>()
+                    val data = receiveDeserialized<List<PlayerPositionDTO>>()
                     println("Incoming: $data")
                     gameEventListener.onPositionsChanged(data.mapToPlayer())
                 }
@@ -53,4 +46,14 @@ class GameRepoImpl : GameRepo {
     }
 }
 
-private fun List<PlayerDTO>.mapToPlayer() = map { PlayerPosition(x = it.x, y = it.y) }
+private class GameControllerImpl(private val wss: DefaultClientWebSocketSession) : GameController {
+    override fun move(direction: Direction) {
+        wss.sendCommand(direction.toMoveCommand())
+    }
+}
+
+private fun DefaultClientWebSocketSession.sendCommand(command: GameCommandDTO) {
+    launch {
+        sendSerialized(command)
+    }
+}

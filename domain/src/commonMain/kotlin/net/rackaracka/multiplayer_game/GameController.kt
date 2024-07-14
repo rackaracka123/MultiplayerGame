@@ -1,5 +1,9 @@
 package net.rackaracka.multiplayer_game
 
+enum class Direction {
+    Up, Down, Left, Right
+}
+
 interface GameController {
-    fun move(x: Int, y: Int)
+    fun move(direction: Direction)
 }

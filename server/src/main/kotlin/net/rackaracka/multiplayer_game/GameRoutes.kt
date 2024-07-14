@@ -16,13 +16,14 @@ fun Route.gameRoutes() {
     webSocket("game") {
         val thisConnection = Connection(this)
         connections += thisConnection
-        val player = game.connectPlayer()
+        val playerId = PlayerID(thisConnection.name)
+        game.connectPlayer(playerId)
         try {
             launch {
                 game.playersFlow.collect {
                     println("[${thisConnection.name}]: players $it")
                     connections.forEach { ws ->
-                        ws.session.sendSerialized(it)
+                        ws.session.sendSerialized(it.map { it.second })
                     }
                 }
             }
@@ -32,7 +33,7 @@ fun Route.gameRoutes() {
                 when (val cmd = command) {
                     is GameCommandDTO.MoveDTO -> {
                         println("Incoming: Move command")
-                        game.move(player, cmd.x, cmd.y)
+                        game.move(playerId, cmd.direction)
                     }
                 }
             }
@@ -41,7 +42,7 @@ fun Route.gameRoutes() {
         } finally {
             println("[${thisConnection.name}]: Removing")
             connections -= thisConnection
-            game.disconnectPlayer(player)
+            game.disconnectPlayer(playerId)
             connections.forEach { ws ->
                 ws.session.sendSerialized(game.playersFlow.value)
             }
