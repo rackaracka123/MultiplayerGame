@@ -141,19 +141,15 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
             val isRight = keyEvent.key == Key.D || keyEvent.key == Key.DirectionRight
 
             if (isUp) {
-                println("Up ${keyEvent.type == KeyDown}")
                 viewModel.onPressUpChanged(keyEvent.type == KeyDown)
             }
             if (isDown) {
-                println("Down ${keyEvent.type == KeyDown}")
                 viewModel.onPressDownChanged(keyEvent.type == KeyDown)
             }
             if (isLeft) {
-                println("Left ${keyEvent.type == KeyDown}")
                 viewModel.onPressLeftChanged(keyEvent.type == KeyDown)
             }
             if (isRight) {
-                println("Right ${keyEvent.type == KeyDown}")
                 viewModel.onPressRightChanged(keyEvent.type == KeyDown)
             }
             true
