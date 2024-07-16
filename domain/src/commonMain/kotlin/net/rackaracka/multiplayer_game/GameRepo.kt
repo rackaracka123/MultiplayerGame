@@ -1,12 +1,8 @@
 package net.rackaracka.multiplayer_game
 
-interface GameRepo {
-    suspend fun session(
-        gameScope: suspend GameController.() -> Unit,
-        gameEventListener: GameEventListener
-    )
-}
+import kotlinx.coroutines.flow.StateFlow
 
-interface GameEventListener {
-    fun onPositionsChanged(playerPositions: List<PlayerPosition>)
+interface GameRepo {
+    val playerPosition: StateFlow<PlayerPosition>
+    fun onMove(direction: Direction)
 }

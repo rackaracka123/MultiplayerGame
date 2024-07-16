@@ -23,8 +23,14 @@ kotlin {
     jvm("desktop")
     
     sourceSets {
+        val desktopMain by getting
+
         commonMain.dependencies {
+            implementation(libs.kotlinx.coroutines.core)
             // put your Multiplatform dependencies here
+        }
+        desktopMain.dependencies {
+            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 

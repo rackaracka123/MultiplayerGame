@@ -8,51 +8,28 @@ import io.ktor.client.plugins.websocket.sendSerialized
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 class GameRepoImpl : GameRepo {
-    override suspend fun session(
-        gameScope: suspend GameController.() -> Unit,
-        gameEventListener: GameEventListener
-    ) {
-        val httpClient = HttpClient() {
-            install(WebSockets) {
-                contentConverter = KotlinxWebsocketSerializationConverter(Json)
-            }
+
+    private val _playerPosition = MutableStateFlow(PlayerPosition(5, 5))
+    override val playerPosition = _playerPosition.asStateFlow()
+
+    override fun onMove(direction: Direction) {
+        val (dx, dy) = when (direction) {
+            Direction.Up -> 0 to -1
+            Direction.Down -> 0 to 1
+            Direction.Left -> -1 to 0
+            Direction.Right -> 1 to 0
         }
-
-        try {
-            httpClient.webSocket(
-                method = HttpMethod.Get,
-                host = "192.168.0.49",
-                port = 8080,
-                path = "/game"
-            ) {
-                launch {
-                    val gameController = GameControllerImpl(this@webSocket)
-                    gameScope(gameController)
-                }
-                while (isActive) {
-                    val data = receiveDeserialized<List<PlayerPositionDTO>>()
-                    gameEventListener.onPositionsChanged(data.mapToPlayer())
-                }
-            }
-        } catch (e: Exception) {
-            println("Could not connect to server. $e")
-        }
-    }
-}
-
-private class GameControllerImpl(private val wss: DefaultClientWebSocketSession) : GameController {
-    override fun move(direction: Direction) {
-        wss.sendCommand(direction.toMoveCommand())
-    }
-}
-
-private fun DefaultClientWebSocketSession.sendCommand(command: GameCommandDTO) {
-    launch {
-        sendSerialized(command)
+        _playerPosition.value = PlayerPosition(
+            _playerPosition.value.x + dx,
+            _playerPosition.value.y + dy
+        )
     }
 }

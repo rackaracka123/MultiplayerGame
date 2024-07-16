@@ -48,6 +48,8 @@ kotlin {
         val desktopMain by getting
 
         commonMain.dependencies {
+            implementation(projects.domain)
+
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.ui)

@@ -1,9 +1,7 @@
 package net.rackaracka.multiplayer_game
 
-enum class Direction {
-    Up, Down, Left, Right, UpLeft, UpRight, DownLeft, DownRight
-}
+import kotlinx.coroutines.flow.StateFlow
 
-interface GameController {
-    fun move(direction: Direction)
+enum class Direction {
+    Up, Down, Left, Right
 }
