@@ -35,7 +35,7 @@ kotlin {
     }
 
     @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
+    wasmJs{
         browser {
             commonWebpackConfig {
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
@@ -46,10 +46,6 @@ kotlin {
                 }
             }
         }
-    }
-
-    sourceSets {
-
     }
 }
 

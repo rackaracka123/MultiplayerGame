@@ -6,7 +6,6 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.serialization)
 }
 
 kotlin {
@@ -17,49 +16,25 @@ kotlin {
         }
     }
     
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    
     jvm("desktop")
-
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        browser {
-            commonWebpackConfig {
-                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(project.projectDir.path)
-                    }
-                }
-            }
-        }
-    }
-
+    
     sourceSets {
         val desktopMain by getting
 
         commonMain.dependencies {
-            implementation(projects.domain)
-            implementation(projects.dto)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.serialization.json)
-            implementation(libs.koin.core)
+            implementation("com.soywiz.korge:korge-core:5.1.0")
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
-            implementation(projects.audioPlayer)
         }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js.wasm.js)
         }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
         desktopMain.dependencies {
             implementation(libs.ktor.client.cio)
-            implementation(projects.audioPlayer)
+            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 }
