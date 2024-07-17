@@ -9,6 +9,7 @@ fun KoinApplication.registerModules() {
 
 private val repositories = module {
     single<GameRepo> { GameRepoImpl() }
+    single<MediaPlayerController> { MediaPlayerControllerImpl() }
 }
 
 private val usecases = module {

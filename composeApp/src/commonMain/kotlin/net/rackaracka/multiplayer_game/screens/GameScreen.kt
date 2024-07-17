@@ -17,21 +17,51 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import multiplayergame.composeapp.generated.resources.Res
 import multiplayergame.composeapp.generated.resources.submarine
 import net.rackaracka.multiplayer_game.Board
 import net.rackaracka.multiplayer_game.Direction
 import net.rackaracka.multiplayer_game.GameRepo
+import net.rackaracka.multiplayer_game.MediaPlayerController
+import net.rackaracka.multiplayer_game.MediaPlayerListener
 import net.rackaracka.multiplayer_game.Point
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+@OptIn(ExperimentalResourceApi::class)
 class GameScreenModel : ViewModel(), KoinComponent {
     private val gameRepo by inject<GameRepo>()
+    private val mediaPlayerController by inject<MediaPlayerController>()
 
     val playerPosition = gameRepo.playerPosition
+
+    init {
+        viewModelScope.launch {
+            val bytes = Res.readBytes("files/ambience_music.mp3")
+            mediaPlayerController.prepare(bytes, object : MediaPlayerListener {
+                override fun onPrepared() {
+                    viewModelScope.launch {
+                        mediaPlayerController.start()
+                    }
+                }
+
+                override fun onCompletion() {
+                    viewModelScope.launch {
+                        mediaPlayerController.start()
+                    }
+                }
+
+                override fun onError(exception: Exception) {
+                    println("MediaController error: $exception")
+                }
+            })
+        }
+    }
 
     fun onClickUp() {
         gameRepo.onMove(Direction.Up)

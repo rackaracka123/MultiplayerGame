@@ -1,33 +1,22 @@
 package net.rackaracka.multiplayer_game
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import io.ktor.util.toJsArray
 import org.w3c.dom.Audio
 import org.w3c.dom.url.URL
 import org.w3c.files.Blob
 
-// WORKS without 3rd party
+// It's a miracle that this code works
+private fun wrapInsideArray(any: JsAny): JsArray<JsAny?> = js("[any]")
+
 
 actual class MediaPlayerControllerImpl : MediaPlayerController {
     private var audio: Audio? = null
     private var isAudioPlaying = false
-
-    init {
-        val testAudio =
-            Audio("https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4")
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(2000)
-            testAudio.play()
-        }
-    }
-
+    
     override suspend fun prepare(mediaBytes: ByteArray, listener: MediaPlayerListener) {
         try {
-            val url = URL.createObjectURL(Blob(JsArray<JsAny?>().apply {
-                set(0, mediaBytes.toJsReference())
-            }))
+            val bytes = wrapInsideArray(mediaBytes.toJsArray())
+            val url = URL.createObjectURL(Blob(bytes))
             audio = Audio(url)
             audio?.oncanplaythrough = {
                 listener.onPrepared()
@@ -36,6 +25,7 @@ actual class MediaPlayerControllerImpl : MediaPlayerController {
                 listener.onCompletion()
             }
         } catch (e: Exception) {
+            println("Error: $e")
             listener.onError(e)
         }
     }
