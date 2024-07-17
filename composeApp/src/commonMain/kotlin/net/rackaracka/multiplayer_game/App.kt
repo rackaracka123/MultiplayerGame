@@ -14,9 +14,11 @@ import io.ktor.utils.io.core.use
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.rackaracka.multiplayer_game.screens.GameScreen
+import net.rackaracka.multiplayer_game.screens.StartScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 sealed class Screen(val route: String) {
+    data object Start : Screen("start")
     data object Welcome : Screen("welcome")
 }
 
@@ -25,7 +27,13 @@ sealed class Screen(val route: String) {
 fun App() {
     MaterialTheme {
         val controller = rememberNavController()
-        NavHost(controller, startDestination = Screen.Welcome.route) {
+        NavHost(controller, startDestination = Screen.Start.route) {
+            composable(Screen.Start.route) {
+                StartScreen {
+                    controller.popBackStack()
+                    controller.navigate(Screen.Welcome.route)
+                }
+            }
             composable(Screen.Welcome.route) {
                 GameScreen()
             }

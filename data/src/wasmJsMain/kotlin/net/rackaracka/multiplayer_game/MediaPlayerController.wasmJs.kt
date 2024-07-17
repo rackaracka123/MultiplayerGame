@@ -12,7 +12,7 @@ private fun wrapInsideArray(any: JsAny): JsArray<JsAny?> = js("[any]")
 actual class MediaPlayerControllerImpl : MediaPlayerController {
     private var audio: Audio? = null
     private var isAudioPlaying = false
-    
+
     override suspend fun prepare(mediaBytes: ByteArray, listener: MediaPlayerListener) {
         try {
             val bytes = wrapInsideArray(mediaBytes.toJsArray())
