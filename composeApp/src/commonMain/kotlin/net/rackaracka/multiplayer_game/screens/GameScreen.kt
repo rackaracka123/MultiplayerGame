@@ -108,7 +108,7 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
             if (isRight && keyEvent.type == KeyDown) {
                 viewModel.onClickRight()
             }
-            true
+            false
         }
             .focusRequester(inputRequester)
             .focusable())
