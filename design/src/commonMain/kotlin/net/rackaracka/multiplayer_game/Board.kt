@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 
+/*
+ * The contents are not perfectly placed at the point.
+ */
 @Composable
 fun Board(
     verticalTilesCount: Int = 10,
@@ -35,7 +39,7 @@ fun Board(
 ) {
     val density = LocalDensity.current
     val gridThickness = 2.dp
-    Column {
+    Column(modifier = Modifier.aspectRatio(1f)) {
         Row {
             Text("11", modifier = Modifier.alpha(0f))
             // Hacky fix to avoid measure the right side numbers (Will probably do in future)
@@ -57,6 +61,12 @@ fun Board(
             }
             var boardWidth by remember { mutableStateOf(0.dp) }
             var boardHeight by remember { mutableStateOf(0.dp) }
+            var tileWidth by remember { mutableStateOf(0.dp) }
+            var tileHeight by remember { mutableStateOf(0.dp) }
+
+            val tileWidthPx = remember(tileWidth) { with(density) { tileWidth.toPx() } }
+            val tileHeightPx = remember(tileHeight) { with(density) { tileHeight.toPx() } }
+            val gridThicknessPx = remember(gridThickness) { with(density) { gridThickness.toPx() } }
             Box(
                 modifier = Modifier.fillMaxSize().background(Color(0xFFCDECF9))
                     .onGloballyPositioned {
@@ -69,7 +79,9 @@ fun Board(
                             modifier = Modifier.fillMaxHeight().width(gridThickness)
                                 .background(Color.White)
                         )
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.weight(1f).onGloballyPositioned {
+                            tileWidth = with(density) { it.size.width.toDp() }
+                        })
                     }
                 }
                 Column {
@@ -78,13 +90,11 @@ fun Board(
                             modifier = Modifier.fillMaxWidth().height(gridThickness)
                                 .background(Color.White)
                         )
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.weight(1f).onGloballyPositioned {
+                            tileHeight = with(density) { it.size.height.toDp() }
+                        })
                     }
                 }
-
-                // TODO: Fence post problem | |X| = 2 + space + 2 != space
-                val tileWidth = (boardWidth / horizontalTilesCount)
-                val tileHeight = (boardHeight / verticalTilesCount)
 
                 contents.forEach {
                     Box(
@@ -93,8 +103,8 @@ fun Board(
                             .height(tileHeight - gridThickness)
                             .offset {
                                 IntOffset(
-                                    x = ((tileWidth.value * it.first.x * 2) + (gridThickness.value * 2)).toInt(),
-                                    y = ((tileHeight.value * it.first.y * 2) + (gridThickness.value * 2)).toInt()
+                                    x = (tileWidthPx * it.first.x + (gridThicknessPx * (it.first.x + 1))).toInt(),
+                                    y = (tileHeightPx * it.first.y + (gridThicknessPx * (it.first.y + 1))).toInt()
                                 )
                             },
                         contentAlignment = Alignment.Center

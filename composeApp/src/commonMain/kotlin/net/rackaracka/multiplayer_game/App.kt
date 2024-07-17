@@ -23,35 +23,6 @@ sealed class Screen(val route: String) {
 @Composable
 @Preview
 fun App() {
-    LaunchedEffect(Unit) {
-        val h = MediaPlayerControllerImpl()
-        h.apply {
-            HttpClient().let {
-                val soundBytes =
-                    it.get("https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3")
-                        .readBytes()
-                prepare(soundBytes, object : MediaPlayerListener {
-                    override fun onPrepared() {
-                        launch {
-                            start()
-                        }
-                    }
-
-                    override fun onCompletion() {
-                        println("Completed")
-                    }
-
-                    override fun onError(exception: Exception) {
-                        println("Error $exception")
-                    }
-                })
-                // För att LaunchedEffekten inte ska dö direkt efter att man ha börjat spela ett ljud
-                delay(100000)
-
-                // TODO: Mig imorgon -> Implementera iOS natively för att KorGe är trash.
-            }
-        }
-    }
     MaterialTheme {
         val controller = rememberNavController()
         NavHost(controller, startDestination = Screen.Welcome.route) {
