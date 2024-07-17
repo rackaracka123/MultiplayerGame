@@ -1,24 +1,16 @@
 package net.rackaracka.multiplayer_game
 
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
-import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.plugins.websocket.receiveDeserialized
-import io.ktor.client.plugins.websocket.sendSerialized
-import io.ktor.client.plugins.websocket.webSocket
-import io.ktor.http.HttpMethod
-import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 class GameRepoImpl : GameRepo {
 
     private val _playerPosition = MutableStateFlow(PlayerPosition(5, 5))
     override val playerPosition = _playerPosition.asStateFlow()
+
+    private val _playerMines = MutableStateFlow(setOf<Point>())
+    override val playerMines = _playerMines.asStateFlow()
+
 
     override fun onMove(direction: Direction) {
         val (dx, dy) = when (direction) {
@@ -27,9 +19,18 @@ class GameRepoImpl : GameRepo {
             Direction.Left -> -1 to 0
             Direction.Right -> 1 to 0
         }
-        _playerPosition.value = PlayerPosition(
+        val newPos = PlayerPosition(
             _playerPosition.value.x + dx,
             _playerPosition.value.y + dy
         )
+        
+        if (_playerMines.value.contains(Point(newPos.x, newPos.y))) {
+            return
+        }
+        _playerPosition.value = newPos
+    }
+
+    override fun onDeployMine() {
+        _playerMines.value += Point(_playerPosition.value.x, _playerPosition.value.y)
     }
 }

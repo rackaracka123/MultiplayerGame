@@ -1,7 +1,9 @@
 package net.rackaracka.multiplayer_game
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +29,18 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import multiplayergame.design.generated.resources.Res
+import multiplayergame.design.generated.resources.mine
+import multiplayergame.design.generated.resources.submarine
+import org.jetbrains.compose.resources.painterResource
+
+interface BoardScope {
+    @Composable
+    fun Submarine(point: Point)
+
+    @Composable
+    fun Mine(point: Point)
+}
 
 /*
  * The contents are not perfectly placed at the point.
@@ -35,7 +49,7 @@ import androidx.compose.ui.unit.dp
 fun Board(
     verticalTilesCount: Int = 10,
     horizontalTilesCount: Int = 10,
-    contents: List<Pair<Point, @Composable () -> Unit>>
+    boardScope: @Composable BoardScope.() -> Unit
 ) {
     val density = LocalDensity.current
     val gridThickness = 2.dp
@@ -96,22 +110,50 @@ fun Board(
                     }
                 }
 
-                contents.forEach {
-                    Box(
-                        modifier = Modifier
-                            .width(tileWidth - gridThickness)
-                            .height(tileHeight - gridThickness)
-                            .offset {
-                                IntOffset(
-                                    x = (tileWidthPx * it.first.x + (gridThicknessPx * (it.first.x + 1))).toInt(),
-                                    y = (tileHeightPx * it.first.y + (gridThicknessPx * (it.first.y + 1))).toInt()
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        it.second()
+                boardScope(object : BoardScope {
+                    @Composable
+                    override fun Submarine(point: Point) {
+                        BoardContent(point) {
+                            Image(
+                                painter = painterResource(Res.drawable.submarine),
+                                contentDescription = null,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
                     }
-                }
+
+                    @Composable
+                    override fun Mine(point: Point) {
+                        BoardContent(point) {
+                            Image(
+                                painter = painterResource(Res.drawable.mine),
+                                contentDescription = null,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                    }
+
+                    @Composable
+                    private fun BoardContent(
+                        point: Point,
+                        content: @Composable BoxScope.() -> Unit
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(tileWidth - gridThickness)
+                                .height(tileHeight - gridThickness)
+                                .offset {
+                                    IntOffset(
+                                        x = (tileWidthPx * point.x + (gridThicknessPx * (point.x + 1))).toInt(),
+                                        y = (tileHeightPx * point.y + (gridThicknessPx * (point.y + 1))).toInt()
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            content()
+                        }
+                    }
+                })
             }
         }
     }
