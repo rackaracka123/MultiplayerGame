@@ -1,5 +1,7 @@
 package net.rackaracka.multiplayer_game
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.koin.core.KoinApplication
 import org.koin.dsl.module
 
@@ -8,7 +10,7 @@ fun KoinApplication.registerModules() {
 }
 
 private val repositories = module {
-    single<GameRepo> { GameRepoImpl() }
+    single<GameRepo> { GameRepoImpl(CoroutineScope(Dispatchers.Main)) }
     single<MediaPlayerController> { MediaPlayerControllerImpl() }
 }
 

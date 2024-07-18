@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType.Companion.KeyDown
 import androidx.compose.ui.input.key.key
@@ -38,23 +39,27 @@ import net.rackaracka.multiplayer_game.Direction
 import net.rackaracka.multiplayer_game.GameRepo
 import net.rackaracka.multiplayer_game.MediaPlayerController
 import net.rackaracka.multiplayer_game.MediaPlayerListener
-import net.rackaracka.multiplayer_game.MineID
 import net.rackaracka.multiplayer_game.Point
+import net.rackaracka.multiplayer_game.Sector
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-// Flytta över showMineDetonationNumbers till data lagret, man ska inte kunna flytta sig när det är aktivt.
 @OptIn(ExperimentalResourceApi::class)
 class GameScreenModel : ViewModel(), KoinComponent {
     private val gameRepo by inject<GameRepo>()
     private val mediaPlayerController by inject<MediaPlayerController>()
 
-    val playerPosition = gameRepo.playerPosition
-    private val _playerMines = gameRepo.playerMines
+    val boardSize = gameRepo.boardSize
+
+    private val player = gameRepo.player
+    val playerPosition = player.map { it.position }.eagerStateIn(null)
+
+    private val _playerMines = player.map { it.mines }.eagerStateIn(setOf())
+
     val playerMines = _playerMines.map {
-        it.mapIndexed { index, pair ->
-            index to pair.second
+        it.mapIndexed { index, mine ->
+            index to mine.position
         }
     }.eagerStateIn(emptyList())
 
@@ -62,6 +67,10 @@ class GameScreenModel : ViewModel(), KoinComponent {
 
     private val canReleaseMine = gameRepo.canReleaseMine
     private val canDetonateMine = gameRepo.canDetonateMine
+    private val canSonar = gameRepo.canSonar
+
+    private val _sonarScanResult = MutableStateFlow<Pair<Boolean, Sector>?>(null)
+    val sonarScanResult = _sonarScanResult.asStateFlow()
 
     private val _detonatedMines = MutableStateFlow<List<Point>>(emptyList())
     val detonatedMines = _detonatedMines.asStateFlow()
@@ -75,8 +84,9 @@ class GameScreenModel : ViewModel(), KoinComponent {
     val dashboardItems = combine(
         showMineDetonationNumbers,
         canReleaseMine,
-        canDetonateMine
-    ) { openMenu, releaseMine, detonateMine ->
+        canDetonateMine,
+        canSonar,
+    ) { openMenu, releaseMine, detonateMine, sonar ->
         if (openMenu) {
             listOf(
                 DashboardItem.Cancel,
@@ -84,7 +94,8 @@ class GameScreenModel : ViewModel(), KoinComponent {
         } else {
             listOfNotNull(
                 if (releaseMine) DashboardItem.ReleaseMine else null,
-                if (detonateMine) DashboardItem.DetonateMine else null
+                if (detonateMine) DashboardItem.DetonateMine else null,
+                if (sonar) DashboardItem.Sonar else null,
             )
         }
     }.eagerStateIn(emptyList())
@@ -149,8 +160,8 @@ class GameScreenModel : ViewModel(), KoinComponent {
     private fun onClickDetonateMine(mineID: Int) {
         val mineIndex = playerMines.value.indexOfFirst { it.first == mineID }
         val mine = _playerMines.value.toList()[mineIndex]
-        if (gameRepo.onDetonateMine(mine.first)) {
-            _detonatedMines.value += mine.second
+        if (gameRepo.onDetonateMine(mine.id)) {
+            _detonatedMines.value += mine.position
         }
         viewModelScope.launch {
             delay(200)
@@ -161,7 +172,16 @@ class GameScreenModel : ViewModel(), KoinComponent {
 
     fun onClickNumber(number: Long) {
         if (userWantsToDetonateMine.value) {
-            onClickDetonateMine(playerMines.value.toList()[number.toInt()].first)
+            if (number < playerMines.value.size && number >= 0) {
+                onClickDetonateMine(playerMines.value[number.toInt()].first)
+            }
+        }
+    }
+
+    fun onClickSonar() {
+        val scan = gameRepo.onClickSonar()
+        if (scan != null) {
+            _sonarScanResult.value = true to scan
         }
     }
 
@@ -179,6 +199,8 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
     val showMineDetonationNumbers by viewModel.showMineDetonationNumbers.collectAsState()
     val detonatedMines by viewModel.detonatedMines.collectAsState()
     val dashboardItems by viewModel.dashboardItems.collectAsState()
+    val boardSize = viewModel.boardSize
+    val sonarScanResult by viewModel.sonarScanResult.collectAsState()
 
     LaunchedEffect(Unit) {
         inputRequester.requestFocus()
@@ -196,6 +218,7 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
             val isDetonate = keyEvent.key == Key.F
             val isNumber =
                 keyEvent.key >= Key.One && keyEvent.key <= Key.Nine || keyEvent.key == Key.Zero
+            val isSonar = keyEvent.key == Key.Two
 
             if (keyEvent.type == KeyDown) {
                 if (isUp) {
@@ -222,6 +245,9 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
                 if (isDetonate) {
                     viewModel.onClickOpenDetonateView()
                 }
+                if (isSonar) {
+                    viewModel.onClickSonar()
+                }
             }
             false
         }
@@ -230,9 +256,14 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
 
     Row {
         Board(
-            verticalTilesCount = 14, horizontalTilesCount = 14,
+            verticalTilesCount = boardSize, horizontalTilesCount = boardSize,
         ) {
-            Submarine(Point(playerPosition.x, playerPosition.y))
+            sonarScanResult?.let {
+                HighlightSector(if (it.first) Color.Green else Color.Gray, it.second)
+            }
+            playerPosition?.let {
+                Submarine(Point(it.x, it.y))
+            }
             playerMines.forEach {
                 if (showMineDetonationNumbers) {
                     NumberedMine(
