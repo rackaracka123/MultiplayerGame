@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.stateIn
 
 class GameRepoImpl : GameRepo {
 
-    private val _playerPosition = MutableStateFlow(PlayerPosition(5, 5))
+    private val _playerPosition = MutableStateFlow(Point(5, 5))
     override val playerPosition = _playerPosition.asStateFlow()
 
     private val _playerMines = MutableStateFlow(setOf<Pair<MineID, Point>>())
@@ -24,12 +24,12 @@ class GameRepoImpl : GameRepo {
             Direction.Left -> -1 to 0
             Direction.Right -> 1 to 0
         }
-        val newPos = PlayerPosition(
+        val newPos = Point(
             _playerPosition.value.x + dx,
             _playerPosition.value.y + dy
         )
 
-        if (_playerMines.value.any { it.second == Point(newPos.x, newPos.y) }) {
+        if (_playerMines.value.any { it.second == newPos }) {
             return
         }
         _playerPosition.value = newPos

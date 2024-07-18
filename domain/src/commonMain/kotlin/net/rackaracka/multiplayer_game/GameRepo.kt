@@ -8,7 +8,7 @@ import kotlin.jvm.JvmInline
 value class MineID(val value: Int)
 
 interface GameRepo {
-    val playerPosition: StateFlow<PlayerPosition>
+    val playerPosition: StateFlow<Point>
     val playerMines: StateFlow<Set<Pair<MineID, Point>>>
     val canReleaseMine: Flow<Boolean>
     val canDetonateMine: Flow<Boolean>
