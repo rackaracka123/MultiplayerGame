@@ -1,5 +1,6 @@
 package net.rackaracka.multiplayer_game.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -182,6 +185,10 @@ class GameScreenModel : ViewModel(), KoinComponent {
         val scan = gameRepo.onClickSonar()
         if (scan != null) {
             _sonarScanResult.value = true to scan
+            viewModelScope.launch {
+                delay(10000)
+                _sonarScanResult.value = null
+            }
         }
     }
 

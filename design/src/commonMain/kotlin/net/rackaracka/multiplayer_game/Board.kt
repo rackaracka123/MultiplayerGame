@@ -1,26 +1,23 @@
 package net.rackaracka.multiplayer_game
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import multiplayergame.design.generated.resources.Res
@@ -92,127 +88,103 @@ fun Board(
             }
             var boardWidth by remember { mutableStateOf(0.dp) }
             var boardHeight by remember { mutableStateOf(0.dp) }
-            var tileWidth by remember { mutableStateOf(0.dp) }
-            var tileHeight by remember { mutableStateOf(0.dp) }
 
-            val tileWidthPx = remember(tileWidth) { with(density) { tileWidth.toPx() } }
-            val tileHeightPx = remember(tileHeight) { with(density) { tileHeight.toPx() } }
-            val gridThicknessPx = remember(gridThickness) { with(density) { gridThickness.toPx() } }
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color(0xFFCDECF9))
-                    .onGloballyPositioned {
-                        boardWidth = with(density) { it.size.width.toDp() }
-                        boardHeight = with(density) { it.size.height.toDp() }
-                    }) {
-                Row {
-                    repeat(horizontalTilesCount) {
-                        Box(
-                            modifier = Modifier.fillMaxHeight().width(gridThickness)
-                                .background(Color.White)
-                        )
-                        Spacer(Modifier.weight(1f).onGloballyPositioned {
-                            tileWidth = with(density) { it.size.width.toDp() }
-                        })
-                    }
+            FlowRow(
+                maxItemsInEachRow = horizontalTilesCount,
+                modifier = Modifier.fillMaxSize().onGloballyPositioned {
+                    boardWidth = with(density) { it.size.width.toDp() }
+                    boardHeight = with(density) { it.size.height.toDp() }
                 }
-                Column {
-                    repeat(verticalTilesCount) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(gridThickness)
-                                .background(Color.White)
+            ) {
+                repeat(verticalTilesCount) { yIndex ->
+                    repeat(horizontalTilesCount) { xIndex ->
+                        var targetBorderColor by remember { mutableStateOf(Color.White) }
+                        val borderColor by animateColorAsState(
+                            targetValue = targetBorderColor,
+                            animationSpec = tween(1000)
                         )
-                        Spacer(Modifier.weight(1f).onGloballyPositioned {
-                            tileHeight = with(density) { it.size.height.toDp() }
-                        })
-                    }
-                }
-
-                boardScope(object : BoardScope {
-                    @Composable
-                    override fun Submarine(point: Point) {
-                        BoardContent(point) {
-                            Image(
-                                painter = painterResource(Res.drawable.submarine),
-                                contentDescription = null,
-                                modifier = Modifier.align(Alignment.Center)
-                            )
-                        }
-                    }
-
-                    @Composable
-                    override fun Mine(point: Point) {
-                        BoardContent(point) {
-                            Image(
-                                painter = painterResource(Res.drawable.mine),
-                                contentDescription = null,
-                                modifier = Modifier.align(Alignment.Center)
-                            )
-                        }
-                    }
-
-                    @Composable
-                    override fun NumberedMine(point: Point, mineIndex: Int) {
-                        BoardContent(point) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.align(Alignment.Center)
-                            ) {
-                                Image(
-                                    painter = painterResource(Res.drawable.mine),
-                                    contentDescription = null,
-                                    modifier = Modifier.align(Alignment.Center)
-                                )
-                                Text(mineIndex.toString(), color = Color.White)
-                            }
-                        }
-                    }
-
-                    @Composable
-                    override fun DetonatedMine(point: Point) {
-                        BoardContent(point) {
-                            var showDetonatedMine by remember { mutableStateOf(true) }
-                            LaunchedEffect(Unit) {
-                                delay(500)
-                                showDetonatedMine = false
-                            }
-
-                            androidx.compose.animation.AnimatedVisibility(showDetonatedMine) {
-                                Text("🔥")
-                            }
-                        }
-                    }
-
-                    @Composable
-                    override fun HighlightSector(color: Color, sector: Sector) {
-                        FlowRow {
-                            repeat(14 * 14) {
-                                Box(modifier = Modifier.size(tileWidth).border(2.dp, Color.Black))
-                            }
-                        }
-                    }
-
-                    @Composable
-                    private fun BoardContent(
-                        point: Point,
-                        content: @Composable BoxScope.() -> Unit
-                    ) {
                         Box(
-                            modifier = Modifier
-                                .width(tileWidth - gridThickness)
-                                .height(tileHeight - gridThickness)
-                                .offset {
-                                    IntOffset(
-                                        x = (tileWidthPx * point.x + (gridThicknessPx * (point.x + 1))).toInt(),
-                                        y = (tileHeightPx * point.y + (gridThicknessPx * (point.y + 1))).toInt()
-                                    )
-                                },
-                            contentAlignment = Alignment.Center
+                            Modifier.width(boardWidth / horizontalTilesCount)
+                                .height(boardHeight / verticalTilesCount)
+                                .border(2.dp, borderColor)
+                                .background(Color(0xFFCDECF9))
                         ) {
-                            content()
+                            boardScope(object : BoardScope {
+                                @Composable
+                                override fun Submarine(point: Point) {
+                                    if (point.x != xIndex || point.y != yIndex) return
+                                    Image(
+                                        painter = painterResource(Res.drawable.submarine),
+                                        contentDescription = null,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                }
+
+
+                                @Composable
+                                override fun Mine(point: Point) {
+                                    if (point.x != xIndex || point.y != yIndex) return
+                                    Image(
+                                        painter = painterResource(Res.drawable.mine),
+                                        contentDescription = null,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                }
+
+
+                                @Composable
+                                override fun NumberedMine(point: Point, mineIndex: Int) {
+                                    if (point.x != xIndex || point.y != yIndex) return
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    ) {
+                                        Image(
+                                            painter = painterResource(Res.drawable.mine),
+                                            contentDescription = null,
+                                            modifier = Modifier.align(Alignment.Center)
+                                        )
+                                        Text(mineIndex.toString(), color = Color.White)
+                                    }
+                                }
+
+                                @Composable
+                                override fun DetonatedMine(point: Point) {
+                                    if (point.x != xIndex || point.y != yIndex) return
+
+                                    var showDetonatedMine by remember { mutableStateOf(true) }
+                                    LaunchedEffect(Unit) {
+                                        delay(500)
+                                        showDetonatedMine = false
+                                    }
+
+                                    androidx.compose.animation.AnimatedVisibility(showDetonatedMine) {
+                                        Text("🔥")
+                                    }
+                                }
+
+                                @Composable
+                                override fun HighlightSector(color: Color, sector: Sector) {
+                                    if (Point(xIndex, yIndex).isInside(sector)) {
+                                        DisposableEffect(color) {
+                                            targetBorderColor = color
+                                            onDispose {
+                                                targetBorderColor = Color.White
+                                            }
+                                        }
+                                    }
+                                }
+                            })
                         }
                     }
-                })
+                }
             }
         }
     }
 }
+
+private fun Point.isInside(sector: Sector): Boolean {
+    return x in sector.topLeft.x..sector.bottomRight.x &&
+            y in sector.topLeft.y..sector.bottomRight.y
+}
+
