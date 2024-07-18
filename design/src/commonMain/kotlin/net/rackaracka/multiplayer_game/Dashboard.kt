@@ -15,20 +15,31 @@ import multiplayergame.design.generated.resources.mine
 import org.jetbrains.compose.resources.painterResource
 import kotlin.reflect.KFunction0
 
+sealed class DashboardItem {
+    data object Cancel : DashboardItem()
+    data object ReleaseMine : DashboardItem()
+    data object DetonateMine : DashboardItem()
+}
 
 @Composable
-fun Dashboard() {
+fun Dashboard(dashboardItems: List<DashboardItem>) {
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Släpp mina (1)")
-            Image(
-                painter = painterResource(Res.drawable.mine),
-                contentDescription = null,
-                modifier = Modifier.sizeIn(
-                    maxWidth = 100.dp,
-                    maxHeight = 100.dp
-                )
-            )
+        dashboardItems.forEach { dashboardItem ->
+            when (dashboardItem) {
+                DashboardItem.Cancel -> Text("Avbryt (Escape)")
+                DashboardItem.DetonateMine -> Text("Detonera (F)")
+                DashboardItem.ReleaseMine -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Släpp mina (1)")
+                    Image(
+                        painter = painterResource(Res.drawable.mine),
+                        contentDescription = null,
+                        modifier = Modifier.sizeIn(
+                            maxWidth = 100.dp,
+                            maxHeight = 100.dp
+                        )
+                    )
+                }
+            }
         }
     }
 }

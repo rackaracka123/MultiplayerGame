@@ -40,6 +40,9 @@ interface BoardScope {
 
     @Composable
     fun Mine(point: Point)
+
+    @Composable
+    fun NumberedMine(point: Point, mineID: MineID)
 }
 
 /*
@@ -130,6 +133,23 @@ fun Board(
                                 contentDescription = null,
                                 modifier = Modifier.align(Alignment.Center)
                             )
+                        }
+                    }
+
+                    @Composable
+                    override fun NumberedMine(point: Point, mineID: MineID) {
+                        BoardContent(point) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.align(Alignment.Center)
+                            ) {
+                                Image(
+                                    painter = painterResource(Res.drawable.mine),
+                                    contentDescription = null,
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                                Text(mineID.value.toString(), color = Color.White)
+                            }
                         }
                     }
 
