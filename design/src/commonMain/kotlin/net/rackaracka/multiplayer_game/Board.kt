@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import multiplayergame.design.generated.resources.Res
 import multiplayergame.design.generated.resources.mine
 import multiplayergame.design.generated.resources.submarine
@@ -43,6 +45,9 @@ interface BoardScope {
 
     @Composable
     fun NumberedMine(point: Point, mineID: MineID)
+
+    @Composable
+    fun DetonatedMine(point: Point)
 }
 
 /*
@@ -149,6 +154,21 @@ fun Board(
                                     modifier = Modifier.align(Alignment.Center)
                                 )
                                 Text(mineID.value.toString(), color = Color.White)
+                            }
+                        }
+                    }
+
+                    @Composable
+                    override fun DetonatedMine(point: Point) {
+                        BoardContent(point) {
+                            var showDetonatedMine by remember { mutableStateOf(true) }
+                            LaunchedEffect(Unit) {
+                                delay(500)
+                                showDetonatedMine = false
+                            }
+
+                            androidx.compose.animation.AnimatedVisibility(showDetonatedMine) {
+                                Text("🔥")
                             }
                         }
                     }

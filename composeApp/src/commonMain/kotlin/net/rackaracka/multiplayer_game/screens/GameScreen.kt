@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import multiplayergame.composeapp.generated.resources.Res
@@ -64,6 +65,9 @@ class GameScreenModel : ViewModel(), KoinComponent {
 
     private val canReleaseMine = gameRepo.canReleaseMine
     private val canDetonateMine = gameRepo.canDetonateMine
+
+    private val _detonatedMines = MutableStateFlow<List<Point>>(emptyList())
+    val detonatedMines = _detonatedMines.asStateFlow()
 
     private val showMineDetonationNumbers = MutableStateFlow(false)
 
@@ -152,7 +156,10 @@ class GameScreenModel : ViewModel(), KoinComponent {
     }
 
     private fun onClickDetonateMine(mineID: MineID) {
-        gameRepo.onDetonateMine(mineID)
+        val mine = playerMines.value.firstOrNull { it.first == mineID }
+        if (mine != null && gameRepo.onDetonateMine(mineID)) {
+            _detonatedMines.value += mine.second
+        }
     }
 
     fun onClickNumber(number: Long) {
@@ -167,6 +174,7 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
     val inputRequester = remember { FocusRequester() }
 
     val gameState by viewModel.gameState.collectAsState(GameState.Initial)
+    val detonatedMines by viewModel.detonatedMines.collectAsState()
 
     LaunchedEffect(Unit) {
         inputRequester.requestFocus()
@@ -227,6 +235,9 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
                     state.playerMines.forEach {
                         Mine(it)
                     }
+                    detonatedMines.forEach {
+                        DetonatedMine(it)
+                    }
                 }
                 Spacer(Modifier.width(20.dp))
                 Dashboard(state.dashboardItems)
@@ -244,6 +255,9 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
                             point = it.second,
                             mineID = it.first,
                         )
+                    }
+                    detonatedMines.forEach {
+                        DetonatedMine(it)
                     }
                 }
                 Spacer(Modifier.width(20.dp))
