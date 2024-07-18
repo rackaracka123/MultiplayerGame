@@ -21,11 +21,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import multiplayergame.composeapp.generated.resources.Res
@@ -49,7 +51,14 @@ class GameScreenModel : ViewModel(), KoinComponent {
     private val mediaPlayerController by inject<MediaPlayerController>()
 
     val playerPosition = gameRepo.playerPosition
-    val playerMines = gameRepo.playerMines
+    private val _playerMines = gameRepo.playerMines
+    val playerMines = _playerMines.map {
+        it.mapIndexed { index, pair ->
+            index to pair.second
+        }
+    }.eagerStateIn(emptyList())
+
+    private val isGamePaused = gameRepo.isGamePaused
 
     private val canReleaseMine = gameRepo.canReleaseMine
     private val canDetonateMine = gameRepo.canDetonateMine
@@ -57,11 +66,14 @@ class GameScreenModel : ViewModel(), KoinComponent {
     private val _detonatedMines = MutableStateFlow<List<Point>>(emptyList())
     val detonatedMines = _detonatedMines.asStateFlow()
 
-    private val _showMineDetonationNumbers = MutableStateFlow(false)
-    val showMineDetonationNumbers = _showMineDetonationNumbers.asStateFlow()
+    private val userWantsToDetonateMine = MutableStateFlow(false)
+    val showMineDetonationNumbers =
+        combine(userWantsToDetonateMine, isGamePaused) { showNumbers, isPaused ->
+            isPaused && showNumbers
+        }.eagerStateIn(false)
 
     val dashboardItems = combine(
-        _showMineDetonationNumbers,
+        showMineDetonationNumbers,
         canReleaseMine,
         canDetonateMine
     ) { openMenu, releaseMine, detonateMine ->
@@ -117,31 +129,39 @@ class GameScreenModel : ViewModel(), KoinComponent {
     }
 
     fun onCancel() {
-        if (_showMineDetonationNumbers.value) {
-            _showMineDetonationNumbers.value = false
+        if (userWantsToDetonateMine.value) {
+            gameRepo.onResumeGame()
+            userWantsToDetonateMine.value = false
         }
     }
 
     fun onDeployMine() {
-        if (!_showMineDetonationNumbers.value) {
+        if (!userWantsToDetonateMine.value) {
             gameRepo.onDeployMine()
         }
     }
 
     fun onClickOpenDetonateView() {
-        _showMineDetonationNumbers.value = true
+        gameRepo.onPauseGame()
+        userWantsToDetonateMine.value = true
     }
 
-    private fun onClickDetonateMine(mineID: MineID) {
-        val mine = playerMines.value.firstOrNull { it.first == mineID }
-        if (mine != null && gameRepo.onDetonateMine(mineID)) {
+    private fun onClickDetonateMine(mineID: Int) {
+        val mineIndex = playerMines.value.indexOfFirst { it.first == mineID }
+        val mine = _playerMines.value.toList()[mineIndex]
+        if (gameRepo.onDetonateMine(mine.first)) {
             _detonatedMines.value += mine.second
+        }
+        viewModelScope.launch {
+            delay(200)
+            gameRepo.onResumeGame()
+            userWantsToDetonateMine.value = false
         }
     }
 
     fun onClickNumber(number: Long) {
-        if (_showMineDetonationNumbers.value) {
-            onClickDetonateMine(MineID(number.toInt()))
+        if (userWantsToDetonateMine.value) {
+            onClickDetonateMine(playerMines.value.toList()[number.toInt()].first)
         }
     }
 
@@ -217,7 +237,7 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
                 if (showMineDetonationNumbers) {
                     NumberedMine(
                         point = it.second,
-                        mineID = it.first,
+                        mineIndex = it.first,
                     )
                 } else {
                     Mine(it.second)

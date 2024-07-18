@@ -1,10 +1,12 @@
 package net.rackaracka.multiplayer_game
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlin.random.Random
 
 class GameRepoImpl : GameRepo {
 
@@ -16,8 +18,12 @@ class GameRepoImpl : GameRepo {
     override val canReleaseMine = playerMines.map { it.size < 4 }
     override val canDetonateMine = playerMines.map { it.isNotEmpty() }
 
+    private val _isGamePaused = MutableStateFlow(false)
+    override val isGamePaused = _isGamePaused.asStateFlow()
+
 
     override fun onMove(direction: Direction) {
+        if (_isGamePaused.value) return
         val (dx, dy) = when (direction) {
             Direction.Up -> 0 to -1
             Direction.Down -> 0 to 1
@@ -36,13 +42,15 @@ class GameRepoImpl : GameRepo {
     }
 
     override fun onDeployMine() {
-        _playerMines.value += MineID(_playerMines.value.size) to Point(
+        if (_isGamePaused.value) return
+        _playerMines.value += MineID(Random.nextDouble().toString()) to Point(
             _playerPosition.value.x,
             _playerPosition.value.y
         )
     }
 
     override fun onDetonateMine(mineID: MineID): Boolean {
+        if (!_isGamePaused.value) return false
         val newPlayerMines =
             _playerMines.value.toMutableSet().apply { removeAll { it.first == mineID } }.toSet()
         return if (newPlayerMines.size != _playerMines.value.size) {
@@ -51,5 +59,13 @@ class GameRepoImpl : GameRepo {
         } else {
             false
         }
+    }
+
+    override fun onPauseGame() {
+        _isGamePaused.value = true
+    }
+
+    override fun onResumeGame() {
+        _isGamePaused.value = false
     }
 }

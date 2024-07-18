@@ -44,7 +44,7 @@ interface BoardScope {
     fun Mine(point: Point)
 
     @Composable
-    fun NumberedMine(point: Point, mineID: MineID)
+    fun NumberedMine(point: Point, mineIndex: Int)
 
     @Composable
     fun DetonatedMine(point: Point)
@@ -142,7 +142,7 @@ fun Board(
                     }
 
                     @Composable
-                    override fun NumberedMine(point: Point, mineID: MineID) {
+                    override fun NumberedMine(point: Point, mineIndex: Int) {
                         BoardContent(point) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -153,7 +153,7 @@ fun Board(
                                     contentDescription = null,
                                     modifier = Modifier.align(Alignment.Center)
                                 )
-                                Text(mineID.value.toString(), color = Color.White)
+                                Text(mineIndex.toString(), color = Color.White)
                             }
                         }
                     }
