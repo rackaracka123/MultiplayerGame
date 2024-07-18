@@ -19,7 +19,7 @@ class GameRepoImpl(
     private val players = MutableStateFlow(
         listOf(
             Player(HumanPlayerID, Point(0, 0), setOf(), 4), // Human
-            Player(PlayerID(1), Point(10, 10), setOf(), 4) // AI
+            Player(PlayerID(1), Point(5, 2), setOf(), 4) // AI
         )
     )
     private val sonarScanSize = 4
@@ -112,19 +112,19 @@ class GameRepoImpl(
 
     override fun onClickSonar(): Sector? {
         val scanningPlayer = players.value.first { it.id == HumanPlayerID }
-        return players.value.filter { it.id != HumanPlayerID }.mapNotNull {
+        return players.value.filter { it.id != HumanPlayerID }.firstNotNullOfOrNull {
             val topLeftX = (it.position.x / sonarScanSize) * sonarScanSize
             val topLeftY = (it.position.y / sonarScanSize) * sonarScanSize
 
-            val bottomRightX = topLeftX + sonarScanSize
-            val bottomRightY = topLeftY + sonarScanSize
+            val bottomRightX = topLeftX + (sonarScanSize - 1)
+            val bottomRightY = topLeftY + (sonarScanSize - 1)
 
             if (topLeftX <= scanningPlayer.position.x && topLeftY <= scanningPlayer.position.y) {
                 if (bottomRightX >= scanningPlayer.position.x && bottomRightY >= scanningPlayer.position.y) {
                     Sector(Point(topLeftX, topLeftY), Point(bottomRightX, bottomRightY))
                 } else null
             } else null
-        }.firstOrNull()
+        }
     }
 
     private fun modifyPlayerByID(playerID: PlayerID, modify: (player: Player) -> Player?): Player? {

@@ -186,7 +186,7 @@ class GameScreenModel : ViewModel(), KoinComponent {
         if (scan != null) {
             _sonarScanResult.value = true to scan
             viewModelScope.launch {
-                delay(10000)
+                delay(5000)
                 _sonarScanResult.value = null
             }
         }
