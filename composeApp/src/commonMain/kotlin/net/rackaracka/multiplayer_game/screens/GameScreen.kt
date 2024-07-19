@@ -1,6 +1,7 @@
 package net.rackaracka.multiplayer_game.screens
 
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -37,6 +38,7 @@ import net.rackaracka.multiplayer_game.Board
 import net.rackaracka.multiplayer_game.Dashboard
 import net.rackaracka.multiplayer_game.DashboardItem
 import net.rackaracka.multiplayer_game.Direction
+import net.rackaracka.multiplayer_game.GameEvent
 import net.rackaracka.multiplayer_game.GameRepo
 import net.rackaracka.multiplayer_game.MediaPlayerController
 import net.rackaracka.multiplayer_game.MediaPlayerListener
@@ -46,6 +48,11 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+// Reworka pause så att det finns något som håller i vad anledningen är för pausen
+// Detta gör så att man inte kan lägga minor och skanna med sonar samtidigt
+
+// Och man borde inte röra sig om man dör
+
 @OptIn(ExperimentalResourceApi::class)
 class GameScreenModel : ViewModel(), KoinComponent {
     private val gameRepo by inject<GameRepo>()
@@ -53,6 +60,8 @@ class GameScreenModel : ViewModel(), KoinComponent {
 
     val boardSize = gameRepo.boardSize
     val sectorSize = gameRepo.sectorSize
+
+    val gameEvent = gameRepo.gameEvent
 
     private val player = gameRepo.player
     val playerPosition = player.map { it.position }.eagerStateIn(null)
@@ -146,27 +155,19 @@ class GameScreenModel : ViewModel(), KoinComponent {
     }
 
     fun onClickUp() {
-        if (!isGamePaused.value) {
-            gameRepo.onMove(Direction.Up)
-        }
+        gameRepo.onMove(Direction.Up)
     }
 
     fun onClickDown() {
-        if (!isGamePaused.value) {
-            gameRepo.onMove(Direction.Down)
-        }
+        gameRepo.onMove(Direction.Down)
     }
 
     fun onClickLeft() {
-        if (!isGamePaused.value) {
-            gameRepo.onMove(Direction.Left)
-        }
+        gameRepo.onMove(Direction.Left)
     }
 
     fun onClickRight() {
-        if (!isGamePaused.value) {
-            gameRepo.onMove(Direction.Right)
-        }
+        gameRepo.onMove(Direction.Right)
     }
 
     fun onCancel() {
@@ -181,14 +182,12 @@ class GameScreenModel : ViewModel(), KoinComponent {
     }
 
     fun onDeployMine() {
-        if (isGamePaused.value) return
         if (!userWantsToDetonateMine.value) {
             gameRepo.onDeployMine()
         }
     }
 
     fun onClickOpenDetonateView() {
-        if (isGamePaused.value) return
         gameRepo.onPauseGame()
         userWantsToDetonateMine.value = true
     }
@@ -255,6 +254,7 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
     val showMineDetonationNumbers by viewModel.showMineDetonationNumbers.collectAsState()
     val detonatedMines by viewModel.detonatedMines.collectAsState()
     val dashboardItems by viewModel.dashboardItems.collectAsState()
+    val gameEvent by viewModel.gameEvent.collectAsState()
 
     val sonarScanResult by viewModel.sonarScanResult.collectAsState()
     val highlightSectorsWithNumbers by viewModel.highlightSectorsWithNumbers.collectAsState()
@@ -310,40 +310,47 @@ fun GameScreen(viewModel: GameScreenModel = viewModel { GameScreenModel() }) {
         }
             .focusRequester(inputRequester)
             .focusable())
-
-    Row {
-        Board(
-            verticalTilesCount = boardSize, horizontalTilesCount = boardSize,
-            sectorContent = {
-                sonarScanResult?.let {
-                    HighlightSector(it.second, if (it.first) Color.Green else Color.Gray)
-                }
-                highlightSectorsWithNumbers.forEachIndexed { index, sector ->
-                    HighlightSector(sector, Color.Black) {
-                        Text("(${index + 1})")
+    Column {
+        when (val event = gameEvent) {
+            null -> Unit
+            is GameEvent.PlayerDied -> {
+                Text("Spelare ${event.player.id} har dött")
+            }
+        }
+        Row {
+            Board(
+                verticalTilesCount = boardSize, horizontalTilesCount = boardSize,
+                sectorContent = {
+                    sonarScanResult?.let {
+                        HighlightSector(it.second, if (it.first) Color.Green else Color.Gray)
                     }
-                }
-            },
-            tileContent = {
-                playerPosition?.let {
-                    Submarine(Point(it.x, it.y))
-                }
-                playerMines.forEach {
-                    if (showMineDetonationNumbers) {
-                        NumberedMine(
-                            point = it.second,
-                            mineIndex = it.first,
-                        )
-                    } else {
-                        Mine(it.second)
+                    highlightSectorsWithNumbers.forEachIndexed { index, sector ->
+                        HighlightSector(sector, Color.Black) {
+                            Text("(${index + 1})")
+                        }
                     }
-                }
-                detonatedMines.forEach {
-                    DetonatedMine(it)
-                }
-            })
-        Spacer(Modifier.width(20.dp))
-        Dashboard(dashboardItems)
+                },
+                tileContent = {
+                    playerPosition?.let {
+                        Submarine(Point(it.x, it.y))
+                    }
+                    playerMines.forEach {
+                        if (showMineDetonationNumbers) {
+                            NumberedMine(
+                                point = it.second,
+                                mineIndex = it.first,
+                            )
+                        } else {
+                            Mine(it.second)
+                        }
+                    }
+                    detonatedMines.forEach {
+                        DetonatedMine(it)
+                    }
+                })
+            Spacer(Modifier.width(20.dp))
+            Dashboard(dashboardItems)
+        }
     }
 }
 

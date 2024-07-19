@@ -2,8 +2,10 @@ package net.rackaracka.multiplayer_game
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -12,7 +14,7 @@ import kotlin.random.Random
 // Vi vill nog skicka in player som parameter och sen får något autentiserings repo hantera vilken player som ska vart.
 
 class GameRepoImpl(
-    opponentCoroutineScope: CoroutineScope
+    private val gameCoroutineScope: CoroutineScope
 ) : GameRepo {
 
     private val players = MutableStateFlow(
@@ -28,6 +30,9 @@ class GameRepoImpl(
 
     override val player = players.map { it.first { it.id == HumanPlayerID } }
 
+    private val _gameEvent = MutableStateFlow<GameEvent?>(null)
+    override val gameEvent: StateFlow<GameEvent?> = _gameEvent.asStateFlow()
+
     override val canReleaseMine = player.map { it.canReleaseMine() }
     override val canDetonateMine = player.map { it.mines.isNotEmpty() }
     override val canSonar = player.map { true }
@@ -36,7 +41,7 @@ class GameRepoImpl(
     override val isGamePaused = _isGamePaused.asStateFlow()
 
     fun onMove(playerID: PlayerID, direction: Direction) {
-        if (_isGamePaused.value) throw GamePausedException
+        if (_isGamePaused.value) return
         val (dx, dy) = when (direction) {
             Direction.Up -> 0 to -1
             Direction.Down -> 0 to 1
@@ -62,7 +67,7 @@ class GameRepoImpl(
         onMove(HumanPlayerID, direction)
 
     fun onDeployMine(playerID: PlayerID) {
-        if (_isGamePaused.value) throw GamePausedException
+        if (_isGamePaused.value) return
 
         modifyPlayerByID(playerID) { player ->
             if (!player.canReleaseMine()) return@modifyPlayerByID null
@@ -82,21 +87,12 @@ class GameRepoImpl(
     override fun onDeployMine() = onDeployMine(HumanPlayerID)
 
     fun onDetonateMine(playerID: PlayerID, mineID: MineID): Boolean {
-        if (!_isGamePaused.value) throw GameNotPausedException
+        if (!_isGamePaused.value) return false
 
-        return modifyPlayerByID(playerID) { player ->
-            val mine = player.mines.first { it.id == mineID }
-
-            mine.damagePlayers()
-
-            val newPlayerMines =
-                player.mines.toMutableSet().apply { removeAll { it.id == mineID } }.toSet()
-            if (newPlayerMines.size != player.mines.size) {
-                player.copy(mines = newPlayerMines)
-            } else {
-                null
-            }
-        } != null
+        val player = players.value.first { it.id == playerID }
+        player.mines.first { it.id == mineID }
+            .explode(playerID)
+        return true
     }
 
     override fun onDetonateMine(mineID: MineID) =
@@ -112,7 +108,7 @@ class GameRepoImpl(
     }
 
     override fun onClickSonar(index: Int): Sector? {
-        if (!_isGamePaused.value) throw GameNotPausedException
+        if (!_isGamePaused.value) return null
 
         val scanningX = (index % sectorSize) * sectorSize
         val scanningY = (index / sectorSize) * sectorSize
@@ -143,8 +139,17 @@ class GameRepoImpl(
 
     private fun Player.canReleaseMine() = mines.size < 4
 
-    private fun Mine.damagePlayers() {
+    private fun Mine.explode(owner: PlayerID) {
         players.value.forEach {
+            modifyPlayerByID(it.id) { player ->
+                if (owner == player.id) {
+                    val newPlayerMines =
+                        player.mines.toMutableSet().apply { removeAll { it.id == this@explode.id } }
+                            .toSet()
+                    player.copy(mines = newPlayerMines)
+                } else player
+            }
+
             modifyPlayerByID(it.id) { player ->
                 val distancePoint = player.position - this.position
                 val distance =
@@ -159,6 +164,10 @@ class GameRepoImpl(
                     }
 
                     else -> null
+                }
+            }?.also {
+                if (it.health <= 0) {
+                    _gameEvent.value = GameEvent.PlayerDied(it)
                 }
             }
         }
