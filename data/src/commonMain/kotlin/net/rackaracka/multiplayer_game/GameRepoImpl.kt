@@ -1,7 +1,6 @@
 package net.rackaracka.multiplayer_game
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
@@ -22,8 +21,10 @@ class GameRepoImpl(
             Player(PlayerID(1), Point(5, 2), setOf(), 4) // AI
         )
     )
-    private val sonarScanSize = 4
     override val boardSize: Int = 12
+    override val sectorSize: Int = 4
+
+    private val sonarScanSize = sectorSize
 
     override val player = players.map { it.first { it.id == HumanPlayerID } }
 
@@ -35,7 +36,7 @@ class GameRepoImpl(
     override val isGamePaused = _isGamePaused.asStateFlow()
 
     fun onMove(playerID: PlayerID, direction: Direction) {
-        if (_isGamePaused.value) return
+        if (_isGamePaused.value) throw GamePausedException
         val (dx, dy) = when (direction) {
             Direction.Up -> 0 to -1
             Direction.Down -> 0 to 1
@@ -61,7 +62,7 @@ class GameRepoImpl(
         onMove(HumanPlayerID, direction)
 
     fun onDeployMine(playerID: PlayerID) {
-        if (_isGamePaused.value) return
+        if (_isGamePaused.value) throw GamePausedException
 
         modifyPlayerByID(playerID) { player ->
             if (!player.canReleaseMine()) return@modifyPlayerByID null
@@ -81,7 +82,7 @@ class GameRepoImpl(
     override fun onDeployMine() = onDeployMine(HumanPlayerID)
 
     fun onDetonateMine(playerID: PlayerID, mineID: MineID): Boolean {
-        if (!_isGamePaused.value) return false
+        if (!_isGamePaused.value) throw GameNotPausedException
 
         return modifyPlayerByID(playerID) { player ->
             val mine = player.mines.first { it.id == mineID }
@@ -110,8 +111,12 @@ class GameRepoImpl(
         _isGamePaused.value = false
     }
 
-    override fun onClickSonar(): Sector? {
-        val scanningPlayer = players.value.first { it.id == HumanPlayerID }
+    override fun onClickSonar(index: Int): Sector? {
+        if (!_isGamePaused.value) throw GameNotPausedException
+
+        val scanningX = (index % sectorSize) * sectorSize
+        val scanningY = (index / sectorSize) * sectorSize
+        val topLeftPointInScanningSector = Point(scanningX, scanningY)
         return players.value.filter { it.id != HumanPlayerID }.firstNotNullOfOrNull {
             val topLeftX = (it.position.x / sonarScanSize) * sonarScanSize
             val topLeftY = (it.position.y / sonarScanSize) * sonarScanSize
@@ -119,8 +124,8 @@ class GameRepoImpl(
             val bottomRightX = topLeftX + (sonarScanSize - 1)
             val bottomRightY = topLeftY + (sonarScanSize - 1)
 
-            if (topLeftX <= scanningPlayer.position.x && topLeftY <= scanningPlayer.position.y) {
-                if (bottomRightX >= scanningPlayer.position.x && bottomRightY >= scanningPlayer.position.y) {
+            if (topLeftX <= topLeftPointInScanningSector.x && topLeftY <= topLeftPointInScanningSector.y) {
+                if (bottomRightX >= topLeftPointInScanningSector.x && bottomRightY >= topLeftPointInScanningSector.y) {
                     Sector(Point(topLeftX, topLeftY), Point(bottomRightX, bottomRightY))
                 } else null
             } else null
